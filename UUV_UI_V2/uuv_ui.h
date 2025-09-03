@@ -56,7 +56,8 @@ public:
 
     int cv=80;//默认油门
 
-    float pos[6];//自主模式点坐标
+    //float pos[6];//自主模式点坐标
+    float pos[6] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f}; // 初始化，避免未定义值
 
 signals:
     void requestCsvData(int rowIndex);//请求CSV数据信号
@@ -87,6 +88,7 @@ private:
 
     CTrans *ctransWidget = nullptr;//定义全局的连续发送类，指针指向空
 
+    bool csvDataflag = false; // 是否已拿到CSV的有效数据
     int m_csvCurrentIndex = 0; // 当前CSV数据索引
 
 

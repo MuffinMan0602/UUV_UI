@@ -1,0 +1,12 @@
+release/csvworker.o
+release/ctrans.o
+release/main.o
+release/serial_Receive_worker.o
+release/serial_Transmit_worker.o
+release/uuv_ui.o
+release/qrc_Gamepad.o
+release/moc_csvworker.o
+release/moc_ctrans.o
+release/moc_serial_Receive_worker.o
+release/moc_serial_Transmit_worker.o
+release/moc_uuv_ui.o

@@ -404,12 +404,21 @@ void UUV_UI::TransmitInfo()//串口发送程序
 
             if (ctransWidget) {// 请求CSV数据（如果连续发送窗口存在）
                 emit requestCsvData(m_csvCurrentIndex);
-                m_csvCurrentIndex++; // 移动到下一行
+                //m_csvCurrentIndex++; // 移动到下一行
             }
 
-            updateTransValues(); // 更新发送参数
-            transmitWorker->sendSerialData(); // 子线程发送数据
+
+            // 只有在拿到有效数据后才发送
+            if (csvDataflag) {
+                updateTransValues();
+                transmitWorker->sendSerialData();
+            } else {
+                ui->lineEdit_Warning->setText("未打开文件");
+            }
         }
+
+            //updateTransValues(); // 更新发送参数
+            //transmitWorker->sendSerialData(); // 子线程发送数据
     }
 }
 
@@ -583,6 +592,12 @@ void UUV_UI::updateReceivePreview(const QString &receiveView)
 
 void UUV_UI::on_pushButton_OpenFile_clicked()//打开文件按钮
 {
+    // 若串口未打开，给出提示并返回
+    if (!sharedSerial || !sharedSerial->isOpen()) {
+        ui->lineEdit_Warning->setText("未打开串口");
+        return;
+    }
+
     switch (ui->comboBox_TransMode->currentIndex()) {
     case 0:{//连续发送
         // 如果弹窗还存在，就让它激活并返回，不再新建
@@ -633,6 +648,8 @@ void UUV_UI::on_pushButton_OpenFile_clicked()//打开文件按钮
 void UUV_UI::onTransWidgetDestroyed() {//令负责连续发送的窗口类ctrans的指针指空
     ctransWidget = nullptr;
     ui->comboBox_WorkMode->setCurrentIndex(0);
+    csvDataflag = false;  // 退出全自主或关闭窗口后复位
+    m_csvCurrentIndex = 0;
 }
 
 void UUV_UI::handleCsvData(float p1, float p2, float p3, float p4, float p5, float p6)
@@ -643,4 +660,7 @@ void UUV_UI::handleCsvData(float p1, float p2, float p3, float p4, float p5, flo
     pos[3] = p4;
     pos[4] = p5;
     pos[5] = p6;
+
+    csvDataflag = true;   // 标记已获取到有效数据
+    m_csvCurrentIndex++;          // 仅在实际收到数据时推进到下一行
 }
