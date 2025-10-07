@@ -42,7 +42,7 @@ UUV_UI::UUV_UI(QWidget *parent)
     currentTimerUpdate();//先调用一次，然后每1000ms触发一次
 
     //定时发送串口消息
-    connect(TransmitTimer,SIGNAL(timeout()),this,SLOT(TransmitInfo()));
+    connect(TransmitTimer,SIGNAL(timeout()),this,SLOT(requestTransmit()));
     //TransmitTimer->start(TransmitPeriod);
 
     //中断读取手柄信息
@@ -389,7 +389,7 @@ void UUV_UI::on_checkBox_GamePad_checkStateChanged()//勾选/取消勾选手柄�
 //                                                  串口线程                                                  //
 //***********************************************************************************************************//
 
-void UUV_UI::TransmitInfo()//串口发送程序
+void UUV_UI::requestTransmit()//串口发送程序
 {
     if (transmitWorker->isRunning()) {
         if(WorkMode!=0x05)
@@ -400,13 +400,11 @@ void UUV_UI::TransmitInfo()//串口发送程序
             transmitWorker->sendSerialData(); // 子线程发送数据
             ShowMovement();
         }
-        else{
-
-            if (ctransWidget) {// 请求CSV数据（如果连续发送窗口存在）
+        else{//自主发送模式
+            if (ctransWidget) {// 请求CSV数据（如果发送窗口存在）
                 emit requestCsvData(m_csvCurrentIndex);
                 //m_csvCurrentIndex++; // 移动到下一行
             }
-
 
             // 只有在拿到有效数据后才发送
             if (csvDataflag) {
@@ -590,58 +588,42 @@ void UUV_UI::updateReceivePreview(const QString &receiveView)
 //                                                  全自主模式                                                 //
 //***********************************************************************************************************//
 
-void UUV_UI::on_pushButton_OpenFile_clicked()//打开文件按钮
+void UUV_UI::on_pushButton_AutoTrans_clicked()//打开文件按钮
 {
     // 若串口未打开，给出提示并返回
     if (!sharedSerial || !sharedSerial->isOpen()) {
         ui->lineEdit_Warning->setText("未打开串口");
         return;
     }
-
-    switch (ui->comboBox_TransMode->currentIndex()) {
-    case 0:{//连续发送
         // 如果弹窗还存在，就让它激活并返回，不再新建
         if (ctransWidget && ctransWidget->isVisible()) {
             ctransWidget->activateWindow();
             ctransWidget->raise(); // 让弹窗置顶
             return;
         }
-
-        if(!(ui->comboBox_WorkMode->currentIndex()==4)){//把工作模式设置成0x05
+        //把工作模式设置成0x05
+        if(!(ui->comboBox_WorkMode->currentIndex()==4)){
             ui->comboBox_WorkMode->setCurrentIndex(4);
         }
-
         ctransWidget = new CTrans(this);//如果成员变量是nullptr或者窗口已被关闭，就会用new新建一个并记录到全局的成员变量里。
         ctransWidget->setAttribute(Qt::WA_DeleteOnClose); // 关闭时自动释放内存
         ctransWidget->show(); // 非模态显示
         connect(ctransWidget, &CTrans::destroyed, this, &UUV_UI::onTransWidgetDestroyed);
 
-
         // 连接信号槽：
-        // 1. 主窗口请求数据 → 连续发送窗口处理
-        connect(this, &UUV_UI::requestCsvData, ctransWidget, &CTrans::requestData);
+        // 1. 主窗口请求数据 → 连续窗口处理 ()
+        connect(this, &UUV_UI::requestCsvData, ctransWidget, &CTrans::requestData);//UUV_UI::requestCsvData在UUV_UI::requestTransmit()中运行
 
-        // 2. 连续发送窗口更新位置 → 主窗口处理
+        // 2. 发送窗口更新位置 → 主窗口处理
         connect(ctransWidget, &CTrans::updatePositions, this, &UUV_UI::handleCsvData);
 
         // 显示窗口并连接销毁信号
         ctransWidget->show();
         connect(ctransWidget, &CTrans::destroyed, this, &UUV_UI::onTransWidgetDestroyed);
 
-        break;
-    }
-    case 1:
-
-        break;
-    case 2:
-
-        break;
-    default:break;
-    }
-
     //QPoint currentPos = this->pos();      // 获取当前窗口位置
-    this->move(screen_centerX - 350, screen_centerY); // 主窗口向左平移350像素
-    ctransWidget->move(screen_centerX + 850, screen_centerY);// 弹窗向右平移850像素
+    // this->move(screen_centerX - 350, screen_centerY); // 主窗口向左平移350像素
+    // ctransWidget->move(screen_centerX + 850, screen_centerY);// 弹窗向右平移850像素
 }
 
 
@@ -652,8 +634,9 @@ void UUV_UI::onTransWidgetDestroyed() {//令负责连续发送的窗口类ctrans
     m_csvCurrentIndex = 0;
 }
 
-void UUV_UI::handleCsvData(float p1, float p2, float p3, float p4, float p5, float p6)
+void UUV_UI::handleCsvData(int Index, float p1, float p2, float p3, float p4, float p5, float p6)
 {
+    m_csvCurrentIndex = Index;
     pos[0] = p1;
     pos[1] = p2;
     pos[2] = p3;
@@ -664,3 +647,5 @@ void UUV_UI::handleCsvData(float p1, float p2, float p3, float p4, float p5, flo
     csvDataflag = true;   // 标记已获取到有效数据
     m_csvCurrentIndex++;          // 仅在实际收到数据时推进到下一行
 }
+
+

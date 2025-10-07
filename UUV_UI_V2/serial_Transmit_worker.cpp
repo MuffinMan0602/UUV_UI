@@ -22,7 +22,7 @@ void SerialTransmitWorker::run()
 }
 
 
-//更新控制参数
+//更新控制参数-非自主模式
 void SerialTransmitWorker::updateTransValues(int8_t WorkMode,int8_t tx, int8_t ty, int8_t tz, int8_t tphi, int8_t ttheta, int8_t tpsi, float depth, float yaw)
 {
     QMutexLocker locker(&mutex);// 更新控制参数（确保线程安全）
@@ -37,6 +37,7 @@ void SerialTransmitWorker::updateTransValues(int8_t WorkMode,int8_t tx, int8_t t
     Yaw_d = yaw;
 }
 
+//更新控制参数-自主模式
 void SerialTransmitWorker::updateTransValues2(int8_t WorkMode, float p1, float p2, float p3, float p4, float p5, float p6)
 {
     QMutexLocker locker(&mutex);// 更新控制参数（确保线程安全）
@@ -47,8 +48,6 @@ void SerialTransmitWorker::updateTransValues2(int8_t WorkMode, float p1, float p
     pos4 = p4;
     pos5 = p5;
     pos6 = p6;
-
-    //qDebug()<<pos1<<pos2<<pos3<<pos4<<pos5<<pos6;
 }
 
 

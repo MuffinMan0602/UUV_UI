@@ -5,6 +5,7 @@
 #include <QFileDialog>
 #include <QVector>
 #include <QMutex>
+#include <QMessageBox>
 
 // 前向声明CsvWorker类
 class CsvWorker;
@@ -26,14 +27,12 @@ public:
 
 signals:
     void requestData(int rowIndex);//请求数据信号
-    void updatePositions(float p1, float p2, float p3, float p4, float p5, float p6);
+    void updatePositions(int thisIndex, float p1, float p2, float p3, float p4, float p5, float p6);
 
 private slots:
     void on_pushButton_ChoseFile_clicked();//选择文件
 
     void on_pushButton_BeginTrans_clicked();//开始发送
-
-    void on_checkBox_Record_checkStateChanged();//勾选开启记录
 
     void on_pushButton_StopTrans_clicked();//停止发送
 
@@ -47,8 +46,11 @@ private:
     Ui::CTrans *ui2;
     CsvWorker* m_csvWorker = nullptr; // CSV工作线程指针
     int m_currentIndex = 0; // 当前发送的行索引
-    bool trans_flag = false;//发送标志
+    bool trans_flag = false;//发送标志，false不发送，true发送
+    bool pause_flag = false;//暂停标志，false不暂停、发送，true暂停、不发送
+
     int m_totalRows = 0; // CSV文件总行数
+
 
 };
 

@@ -119,7 +119,7 @@ private slots:
     void updateJoystickData();//更新手柄
     void on_checkBox_GamePad_checkStateChanged();//勾选手柄操作
 
-    void TransmitInfo();//**
+    void requestTransmit();//
 
     // 串口子线程信号槽
     void onSerialErrorOccurred(const QString &errorMessage); // 新增，处理串口错误
@@ -128,9 +128,8 @@ private slots:
     void updateTransValues(); // 更新发送参数
 
     //文件相关操作
-    void on_pushButton_OpenFile_clicked();//开始发送程序按钮
+    void on_pushButton_AutoTrans_clicked();//开始发送程序按钮
     void onTransWidgetDestroyed();//另负责连续发送的窗口类ctrans指针指空
-
-    void handleCsvData(float p1, float p2, float p3, float p4, float p5, float p6);//处理CSV坐标数据
+    void handleCsvData(int Index, float p1, float p2, float p3, float p4, float p5, float p6);//处理CSV坐标数据
 };
 #endif // UUV_UI_H
