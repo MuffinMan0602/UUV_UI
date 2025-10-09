@@ -16,6 +16,7 @@ SOURCES += \
     main.cpp \
     serial_Receive_worker.cpp \
     serial_Transmit_worker.cpp \
+    uuv_log_recorder.cpp \
     uuv_ui.cpp
 
 HEADERS += \
@@ -23,6 +24,7 @@ HEADERS += \
     ctrans.h \
     serial_Receive_worker.h \
     serial_Transmit_worker.h \
+    uuv_log_recorder.h \
     uuv_ui.h
 
 FORMS += \

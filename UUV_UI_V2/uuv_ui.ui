@@ -6,20 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1450</width>
-    <height>790</height>
+    <width>1520</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1450</width>
-    <height>790</height>
+    <width>1520</width>
+    <height>800</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1450</width>
-    <height>790</height>
+    <width>1520</width>
+    <height>801</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -30,8 +30,8 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>750</y>
-      <width>421</width>
+      <y>760</y>
+      <width>413</width>
       <height>31</height>
      </rect>
     </property>
@@ -747,7 +747,7 @@
        <x>5</x>
        <y>20</y>
        <width>411</width>
-       <height>266</height>
+       <height>271</height>
       </rect>
      </property>
      <property name="font">
@@ -1422,7 +1422,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>560</y>
+      <y>570</y>
       <width>431</width>
       <height>151</height>
      </rect>
@@ -1651,10 +1651,10 @@
    <widget class="QGroupBox" name="groupBox_3">
     <property name="geometry">
      <rect>
-      <x>960</x>
-      <y>180</y>
+      <x>433</x>
+      <y>220</y>
       <width>481</width>
-      <height>601</height>
+      <height>581</height>
      </rect>
     </property>
     <property name="title">
@@ -1667,21 +1667,21 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>330</y>
-       <width>480</width>
-       <height>240</height>
+       <y>310</y>
+       <width>478</width>
+       <height>230</height>
       </rect>
      </property>
      <property name="minimumSize">
       <size>
-       <width>480</width>
-       <height>240</height>
+       <width>478</width>
+       <height>230</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>480</width>
-       <height>240</height>
+       <width>478</width>
+       <height>230</height>
       </size>
      </property>
     </widget>
@@ -1689,7 +1689,7 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>300</y>
+       <y>280</y>
        <width>91</width>
        <height>25</height>
       </rect>
@@ -1720,7 +1720,7 @@
      <property name="geometry">
       <rect>
        <x>410</x>
-       <y>300</y>
+       <y>280</y>
        <width>70</width>
        <height>30</height>
       </rect>
@@ -1751,8 +1751,8 @@
       <rect>
        <x>0</x>
        <y>50</y>
-       <width>480</width>
-       <height>240</height>
+       <width>478</width>
+       <height>230</height>
       </rect>
      </property>
      <property name="sizePolicy">
@@ -1763,14 +1763,14 @@
      </property>
      <property name="minimumSize">
       <size>
-       <width>480</width>
-       <height>240</height>
+       <width>478</width>
+       <height>230</height>
       </size>
      </property>
      <property name="maximumSize">
       <size>
-       <width>480</width>
-       <height>240</height>
+       <width>478</width>
+       <height>230</height>
       </size>
      </property>
     </widget>
@@ -1838,7 +1838,7 @@
      <property name="geometry">
       <rect>
        <x>0</x>
-       <y>570</y>
+       <y>540</y>
        <width>481</width>
        <height>32</height>
       </rect>
@@ -1900,7 +1900,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit_RecordCount_2">
+       <widget class="QLineEdit" name="lineEdit_RecordCount_line">
         <property name="minimumSize">
          <size>
           <width>60</width>
@@ -1952,7 +1952,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QLineEdit" name="lineEdit_RecordCount_3">
+       <widget class="QLineEdit" name="lineEdit_RecordCount_time">
         <property name="minimumSize">
          <size>
           <width>60</width>
@@ -2025,27 +2025,14 @@
       </item>
      </layout>
     </widget>
-    <widget class="Line" name="line_2">
-     <property name="geometry">
-      <rect>
-       <x>-10</x>
-       <y>290</y>
-       <width>501</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="orientation">
-      <enum>Qt::Orientation::Horizontal</enum>
-     </property>
-    </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_UUVstates">
     <property name="geometry">
      <rect>
-      <x>950</x>
+      <x>430</x>
       <y>10</y>
-      <width>491</width>
-      <height>171</height>
+      <width>481</width>
+      <height>181</height>
      </rect>
     </property>
     <property name="title">
@@ -2441,7 +2428,7 @@
     <widget class="Line" name="line">
      <property name="geometry">
       <rect>
-       <x>250</x>
+       <x>240</x>
        <y>10</y>
        <width>16</width>
        <height>161</height>
@@ -2454,10 +2441,10 @@
     <widget class="QWidget" name="formLayoutWidget_3">
      <property name="geometry">
       <rect>
-       <x>264</x>
+       <x>250</x>
        <y>20</y>
-       <width>223</width>
-       <height>151</height>
+       <width>231</width>
+       <height>152</height>
       </rect>
      </property>
      <layout class="QFormLayout" name="formLayout_3">
@@ -2832,14 +2819,27 @@
       </item>
      </layout>
     </widget>
+    <widget class="Line" name="line_5">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>166</y>
+       <width>481</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Orientation::Horizontal</enum>
+     </property>
+    </widget>
    </widget>
    <widget class="Line" name="line_4">
     <property name="geometry">
      <rect>
-      <x>430</x>
+      <x>423</x>
       <y>0</y>
-      <width>20</width>
-      <height>781</height>
+      <width>16</width>
+      <height>801</height>
      </rect>
     </property>
     <property name="orientation">
@@ -2849,10 +2849,10 @@
    <widget class="Line" name="line_7">
     <property name="geometry">
      <rect>
-      <x>940</x>
+      <x>905</x>
       <y>0</y>
-      <width>20</width>
-      <height>781</height>
+      <width>21</width>
+      <height>801</height>
      </rect>
     </property>
     <property name="orientation">
@@ -2863,8 +2863,8 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>710</y>
-      <width>421</width>
+      <y>720</y>
+      <width>413</width>
       <height>31</height>
      </rect>
     </property>
@@ -2887,7 +2887,230 @@
      <bool>true</bool>
     </property>
    </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget_3">
+    <property name="geometry">
+     <rect>
+      <x>440</x>
+      <y>190</y>
+      <width>471</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <property name="spacing">
+      <number>10</number>
+     </property>
+     <property name="leftMargin">
+      <number>2</number>
+     </property>
+     <property name="rightMargin">
+      <number>2</number>
+     </property>
+     <item>
+      <widget class="QLabel" name="label_jettison_2">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>微软雅黑</family>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>控制量反馈</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_tawtheta_2">
+       <property name="minimumSize">
+        <size>
+         <width>35</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_tawy_2">
+       <property name="minimumSize">
+        <size>
+         <width>35</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_tawphi_2">
+       <property name="minimumSize">
+        <size>
+         <width>35</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_tawz_2">
+       <property name="minimumSize">
+        <size>
+         <width>35</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_tawx_2">
+       <property name="minimumSize">
+        <size>
+         <width>35</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="lineEdit_tawpsi_2">
+       <property name="minimumSize">
+        <size>
+         <width>35</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>1000</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="Line" name="line_2">
+    <property name="geometry">
+     <rect>
+      <x>7</x>
+      <y>550</y>
+      <width>421</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Orientation::Horizontal</enum>
+    </property>
+   </widget>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_track">
+   <property name="minimumSize">
+    <size>
+     <width>600</width>
+     <height>400</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>10000</width>
+     <height>10000</height>
+    </size>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetFloatable|QDockWidget::DockWidgetFeature::DockWidgetMovable</set>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::DockWidgetArea::RightDockWidgetArea</set>
+   </property>
+   <property name="windowTitle">
+    <string>UUV轨迹（双击展开）</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4"/>
+  </widget>
+  <widget class="QDockWidget" name="dockWidget_camera">
+   <property name="minimumSize">
+    <size>
+     <width>600</width>
+     <height>400</height>
+    </size>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFeature::DockWidgetFloatable|QDockWidget::DockWidgetFeature::DockWidgetMovable</set>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::DockWidgetArea::RightDockWidgetArea</set>
+   </property>
+   <property name="windowTitle">
+    <string>摄像头画面（双击展开）</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_6"/>
+  </widget>
+  <zorder>dockWidget_track</zorder>
+  <zorder>dockWidget_camera</zorder>
  </widget>
  <resources/>
  <connections/>

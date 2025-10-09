@@ -35,38 +35,50 @@ UUV_UI::UUV_UI(QWidget *parent)
     screen_centerY = (screenRect.height() - height())/2;
     move(screen_centerX, screen_centerY);
 
-    //更新时间框
-    QTimer *timer1 = new QTimer(this);
+    // ------------------ 时间显示定时器 ------------------
+    QTimer *timer1 = new QTimer(this);//更新时间框
     connect(timer1,SIGNAL(timeout()),this,SLOT(currentTimerUpdate()));//关联定时器和更新时间函数
     timer1->start(1000);//每1000ms产生一次timeout()信号
     currentTimerUpdate();//先调用一次，然后每1000ms触发一次
 
-    //定时发送串口消息
-    connect(TransmitTimer,SIGNAL(timeout()),this,SLOT(requestTransmit()));
+    // ------------------ 串口发送定时器 ------------------
+    connect(TransmitTimer,SIGNAL(timeout()),this,SLOT(requestTransmit()));//定时发送串口消息
     //TransmitTimer->start(TransmitPeriod);
 
+    // ------------------ 手柄轮询定时器 ------------------
     //中断读取手柄信息
     connect(Gamepad_timer,SIGNAL(timeout()),this,SLOT(updateJoystickData()));
 
+    // ------------------ 线程信号槽 ---------------------
     //连接子线程信号和槽
     connect(receiveWorker, &SerialReceiveWorker::dataReceived, this, &UUV_UI::onSerialDataReceived);
     connect(receiveWorker, &SerialReceiveWorker::errorOccurred, this, &UUV_UI::onSerialErrorOccurred);
     connect(transmitWorker, &SerialTransmitWorker::transmitViewUpdated, this, &UUV_UI::updateTransmitPreview);//预览框
     connect(receiveWorker, &SerialReceiveWorker::receiveViewUpdated, this, &UUV_UI::updateReceivePreview);
 
+
+
+    // ------------------ 线程信号槽 ---------------------
+    // ==== 日志记录：初始化 UI 显示 ====
+    if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText("0");
+    if (ui->lineEdit_RecordCount_time) ui->lineEdit_RecordCount_time->setText("00:00:00");
+
+    // 每秒刷新日志时长/行数（只在记录中才有意义，不记录时也无害）
+    m_recordUiTimer->setInterval(1000);
+    connect(m_recordUiTimer, &QTimer::timeout, this, &UUV_UI::refreshRecordUi);
+
+    // ------------------ 其他变量 ---------------------
     ui->lineEdit_cv->setText("80");//显示默认油门80
-
     m_csvCurrentIndex = 0; // 初始化CSV数据索引
-
 }
 
 UUV_UI::~UUV_UI()
 {
     transmitWorker->terminate();// 停止子线程
-    //transmitWorker->quit();
-    //transmitWorker->wait();
     receiveWorker->stopSerialReceive(); // 停止线程
     sharedSerial->close(); // 由主线程统一关闭
+
+    // 若仍在记录，可在此决定是否自动保存——当前策略：不保存直接销毁**********
     delete ui;
 }
 
@@ -204,20 +216,14 @@ void UUV_UI::on_comboBox_WorkMode_currentIndexChanged()//发送工作模式选�
 {
     switch(ui->comboBox_WorkMode->currentIndex())
     {
-    case 0:
-        WorkMode=0x01;
-        break;
-    case 1:
-        WorkMode=0x02;
-        break;
-    case 2:
-        WorkMode=0x03;
-        break;
-    case 3:
-        WorkMode=0x04;
-        break;
-    case 4:
-        WorkMode=0x05;
+    case 0:WorkMode=0x01;break;
+    case 1:WorkMode=0x02;break;
+    case 2:WorkMode=0x03;break;
+    case 3:WorkMode=0x04;break;
+    case 4:WorkMode=0x05;
+        //进入自主模式时清空旧 pos，避免上次残留
+        csvDataflag = false;
+        for (float &v : pos) v = 0.f; // 或设 NaN，如果你喜欢
         break;
     default:break;
     }
@@ -354,7 +360,7 @@ void UUV_UI::updateJoystickData()//更新手柄信息
         bool dpadLeft  = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_LEFT)  != 0; //左平动
         bool dpadRight = (state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0; //右平动
 
-        taw_x = ry/256; // 32768/128=256
+        taw_x = ry/256; // 32768(油门单侧分辨力)/128（uint8的一半范围）=256
         taw_y = (dpadRight-dpadLeft)*80; //可根据表现调参
         taw_z = (dpadDown-dpadUp)*80;
         taw_phi = lx/256;
@@ -382,9 +388,6 @@ void UUV_UI::on_checkBox_GamePad_checkStateChanged()//勾选/取消勾选手柄�
 
 
 
-
-
-
 //***********************************************************************************************************//
 //                                                  串口线程                                                  //
 //***********************************************************************************************************//
@@ -400,12 +403,10 @@ void UUV_UI::requestTransmit()//串口发送程序
             transmitWorker->sendSerialData(); // 子线程发送数据
             ShowMovement();
         }
-        else{//自主发送模式
+        else{//自主发送模式（发送 pos）
             if (ctransWidget) {// 请求CSV数据（如果发送窗口存在）
                 emit requestCsvData(m_csvCurrentIndex);
-                //m_csvCurrentIndex++; // 移动到下一行
             }
-
             // 只有在拿到有效数据后才发送
             if (csvDataflag) {
                 updateTransValues();
@@ -414,24 +415,35 @@ void UUV_UI::requestTransmit()//串口发送程序
                 ui->lineEdit_Warning->setText("未打开文件");
             }
         }
-
-            //updateTransValues(); // 更新发送参数
-            //transmitWorker->sendSerialData(); // 子线程发送数据
     }
+    // // ============== 日志记录：记录发送行 ===============
+    // if (m_recorder.isRecording()) {
+    //     UUVLogRecorder::TransmitFields tf;
+    //     tf.workMode = WorkMode;
+    //     tf.taw_x = taw_x; tf.taw_y = taw_y; tf.taw_z = taw_z;
+    //     tf.taw_phi = taw_phi; tf.taw_theta = taw_theta; tf.taw_psi = taw_psi;
+    //     tf.depth_d = Depth_d;
+    //     tf.yaw_d   = Yaw_d;
+
+    //     if (WorkMode == 0x05) {            // 仅自主模式真正发送 pos
+    //         tf.posValid = true;
+    //         for (int i=0;i<6;++i) tf.pos[i] = pos[i];
+    //     } else {
+    //         tf.posValid = false;           // 非自主模式：不记录 pos 数值（输出为空列）
+    //     }
+    //     m_recorder.appendTransmit(tf);
+    //     if (ui->lineEdit_RecordCount_line)
+    //         ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
+    // }
 }
 
-void UUV_UI::updateTransValues()//向子线程发送数据
+void UUV_UI::updateTransValues()//向子线程发送数据，更新控制参数
 {
-    // 更新控制参数
-    if(WorkMode!=0x05)//非全自主模式
-    {
+    if(WorkMode!=0x05){//非全自主模式
         transmitWorker->updateTransValues(WorkMode, taw_x, taw_y, taw_z, taw_phi, taw_theta, taw_psi, Depth_d, Yaw_d);
-    }
-    else//全自主模式
-    {
+    }else{//全自主模式
         transmitWorker->updateTransValues2(WorkMode,pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
     }
-
 }
 
 void UUV_UI::ShowMovement()//显示当前动作
@@ -487,23 +499,12 @@ void  UUV_UI::ManualControlValue()//计算控制量
     {
         if(ui->checkBox_GamePad->isChecked()==false)//没有使用手柄的情况
         {//计算控制量，参数可以根据表现修改，int8_t需要保持在-128-127
-            int calculate_x= WPressed-SPressed;
-            taw_x = cv*calculate_x;
-
-            int calculate_y= DPressed-APressed;
-            taw_y = cv*calculate_y;
-
-            int calculate_z= ZPressed-CPressed;
-            taw_z = cv*calculate_z;
-
-            int calculate_phi= 0;
-            taw_phi = cv*calculate_phi;
-
-            int calculate_theta= FPressed-RPressed;
-            taw_theta = cv*calculate_theta;
-
-            int calculate_psi= EPressed-QPressed;
-            taw_psi = cv*calculate_psi;
+            int calculate_x= WPressed-SPressed;taw_x = cv*calculate_x;
+            int calculate_y= DPressed-APressed;taw_y = cv*calculate_y;
+            int calculate_z= ZPressed-CPressed;taw_z = cv*calculate_z;
+            int calculate_phi= 0;taw_phi = cv*calculate_phi;
+            int calculate_theta= FPressed-RPressed;taw_theta = cv*calculate_theta;
+            int calculate_psi= EPressed-QPressed;taw_psi = cv*calculate_psi;
         }
     }
 }
@@ -513,8 +514,7 @@ void UUV_UI::semiAutoControlValueComput()//计算半自主控制的期望深度�
 {
     switch(ui->comboBox_WorkMode->currentIndex())
     {
-    case 0:
-        break;
+    case 0:break;
     case 1:
         if(taw_z>0){
             ui->doubleSpinBox_Depth->setValue(ui->doubleSpinBox_Depth->value()+0.1);
@@ -559,8 +559,16 @@ void UUV_UI::onSerialDataReceived(float x, float y, float z, float roll, float p
     ui->lineEdit_Roll->setText(QString::number(roll, 'f', 2));
     ui->lineEdit_Pitch->setText(QString::number(pitch, 'f', 2));
     ui->lineEdit_Yaw->setText(QString::number(yaw, 'f', 2));
-}
 
+    //==== 日志记录：记录接收行 ====
+    if (m_recorder.isRecording()) {
+        UUVLogRecorder::ReceiveFields rf;
+        rf.eta[0]=x; rf.eta[1]=y; rf.eta[2]=z;
+        rf.eta[3]=roll; rf.eta[4]=pitch; rf.eta[5]=yaw;
+        m_recorder.appendReceive(rf);
+        if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
+    }
+}
 
 // 处理串口错误
 void UUV_UI::onSerialErrorOccurred(const QString &errorMessage)
@@ -568,12 +576,14 @@ void UUV_UI::onSerialErrorOccurred(const QString &errorMessage)
     ui->lineEdit_Warning->setText(errorMessage);
 }
 
-
 //预览框
 void UUV_UI::updateTransmitPreview(const QString &transmitView)
 {
     ui->textBrowser_TPreview->append(transmitView);            // 将新内容追加到发送预览框
     ui->textBrowser_TPreview->moveCursor(QTextCursor::End);    // 光标移动到文本框末尾
+
+    //回调中记录日志，真实预览出现后才记录（保证确实构造并准备发送过）
+    logTransmitFrame();
 }
 
 void UUV_UI::updateReceivePreview(const QString &receiveView)
@@ -624,6 +634,10 @@ void UUV_UI::on_pushButton_AutoTrans_clicked()//打开文件按钮
     //QPoint currentPos = this->pos();      // 获取当前窗口位置
     // this->move(screen_centerX - 350, screen_centerY); // 主窗口向左平移350像素
     // ctransWidget->move(screen_centerX + 850, screen_centerY);// 弹窗向右平移850像素
+
+        // 强制重置
+        m_csvCurrentIndex = 0;
+        csvDataflag = false;//未获取到有效数据
 }
 
 
@@ -643,9 +657,155 @@ void UUV_UI::handleCsvData(int Index, float p1, float p2, float p3, float p4, fl
     pos[3] = p4;
     pos[4] = p5;
     pos[5] = p6;
-
     csvDataflag = true;   // 标记已获取到有效数据
     m_csvCurrentIndex++;          // 仅在实际收到数据时推进到下一行
 }
 
 
+
+//***********************************************************************************************************//
+//                                                  日志记录                                                  //
+//***********************************************************************************************************//
+
+// 勾选“开始记录”复选框后：开始新一轮记录并禁用复选框（直到保存或清除）
+void UUV_UI::on_checkBox_Record_stateChanged(int state)
+{
+    if (state == Qt::Checked) {
+        m_recorder.start();
+        if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText("0");
+        if (ui->lineEdit_RecordCount_time) ui->lineEdit_RecordCount_time->setText("00:00:00");
+        ui->checkBox_Record->setEnabled(false); // 禁用，避免中途取消
+        m_recordUiTimer->start();
+        ui->lineEdit_Warning->setText("开始记录");
+    }
+}
+
+// 每秒刷新记录时长与行数（提升用户感知）
+void UUV_UI::refreshRecordUi()
+{
+    if (!m_recorder.isRecording()) return;
+    if (ui->lineEdit_RecordCount_time)
+        ui->lineEdit_RecordCount_time->setText(m_recorder.formattedDuration());
+    if (ui->lineEdit_RecordCount_line)
+        ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
+}
+
+// 保存按钮：推断文件类型并写出，成功后恢复 UI 状态
+void UUV_UI::on_pushButton_RClear_2_clicked()
+{
+    if (!m_recorder.isRecording() && m_recorder.recordCount()==0) {
+        ui->lineEdit_Warning->setText("无可保存记录");
+        return;
+    }
+    QString defName = "uuv_log_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".csv";
+    QString filePath = QFileDialog::getSaveFileName(this,"保存航行日志",defName,
+                                                    "CSV 文件 (*.csv);;文本文件 (*.txt)");
+    if (filePath.isEmpty()) return;
+
+    QString err;
+    if (!m_recorder.saveToFile(filePath, &err)) {
+        ui->lineEdit_Warning->setText("保存失败: " + err);
+        return;
+    }
+    ui->lineEdit_Warning->setText("保存成功");
+    m_recorder.stopAndClear();
+    m_recordUiTimer->stop();
+    ui->checkBox_Record->setEnabled(true);
+    ui->checkBox_Record->setChecked(false);
+    if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText("0");
+    if (ui->lineEdit_RecordCount_time) ui->lineEdit_RecordCount_time->setText("00:00:00");
+}
+
+// 清除按钮：不保存直接丢弃，恢复 UI
+void UUV_UI::on_pushButton_RClear_3_clicked()
+{
+    if (!m_recorder.isRecording() && m_recorder.recordCount()==0) {
+        ui->lineEdit_Warning->setText("无记录");
+        return;
+    }
+    auto ret = QMessageBox::question(this,"清除日志","确认不保存直接清除？",
+                                     QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (ret == QMessageBox::Yes) {
+        m_recorder.stopAndClear();
+        m_recordUiTimer->stop();
+        ui->checkBox_Record->setEnabled(true);
+        ui->checkBox_Record->setChecked(false);
+        if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText("0");
+        if (ui->lineEdit_RecordCount_time) ui->lineEdit_RecordCount_time->setText("00:00:00");
+        ui->lineEdit_Warning->setText("已清除记录");
+    }
+}
+
+// 关闭窗口：若正在记录，询问是否保存
+void UUV_UI::closeEvent(QCloseEvent *event)
+{
+    if (m_recorder.isRecording() && m_recorder.recordCount() > 0) {
+        auto ret = QMessageBox::question(this,"保存航行日志","当前仍在记录，是否保存？",
+                                         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+                                         QMessageBox::Save);
+        if (ret == QMessageBox::Save) {
+            QString defName = "uuv_log_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".csv";
+            QString filePath = QFileDialog::getSaveFileName(this,"保存航行日志",defName,
+                                                            "CSV 文件 (*.csv);;文本文件 (*.txt)");
+            if (filePath.isEmpty()) {
+                event->ignore();
+                return;
+            }
+            QString err;
+            if (!m_recorder.saveToFile(filePath, &err)) {
+                QMessageBox::warning(this,"保存失败",err);
+                event->ignore();
+                return;
+            }
+            // 保存成功 -> 清理
+            m_recorder.stopAndClear();
+        } else if (ret == QMessageBox::Cancel) {
+            event->ignore();
+            return;
+        } else { // Discard
+            // 丢弃数据正常退出
+            m_recorder.stopAndClear();
+        }
+    }
+    QMainWindow::closeEvent(event);
+}
+
+// ADDED: 只在发送线程已生成预览（真实帧）后记录，防止“假发送”被写入日志
+void UUV_UI::logTransmitFrame()
+{
+    // 未在录制 → 不记录
+    if (!m_recorder.isRecording()) return;
+
+    // WorkMode 可能还在 1~4：记录但 pos 为空
+    // WorkMode == 5：只有当我们“确实发送了自主帧”才记录
+    // 现在以“预览文本中是否包含工作模式字节”作为已发送依据，可进一步更精确
+    // 下面示例假设帧格式中一定能找到模式字节（可按你实际帧格式调整解析）
+
+    // 简易判断：如果串口未打开直接返回（防止某些初始化虚假预览；视实际情况保留/删除）
+    if (!sharedSerial || !sharedSerial->isOpen()) return;
+
+    UUVLogRecorder::TransmitFields tf;
+    tf.workMode = WorkMode;
+    tf.taw_x = taw_x; tf.taw_y = taw_y; tf.taw_z = taw_z;
+    tf.taw_phi = taw_phi; tf.taw_theta = taw_theta; tf.taw_psi = taw_psi;
+    tf.depth_d = Depth_d;
+    tf.yaw_d   = Yaw_d;
+
+    if (WorkMode == 0x05) {
+        // 只有当 csvDataflag == true 时才说明当前 pos[] 已被最新点更新并参与本次发送
+        // 否则不记录这条（直接 return），避免“打开窗口但未开始”导致的空转
+        if (!csvDataflag) {
+            return; // 直接抑制记录
+        }
+        tf.posValid = true;
+        for (int i=0;i<6;++i) tf.pos[i] = pos[i];
+    } else {
+        tf.posValid = false; // 非自主模式，pos 列为空
+    }
+
+    m_recorder.appendTransmit(tf);
+
+    if (ui->lineEdit_RecordCount_line) {
+        ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
+    }
+}

@@ -111,7 +111,6 @@ void CTrans::on_pushButton_StopTrans_clicked()//停止发送
     // 添加四个自定义按钮
     QPushButton *btnCloseRemote = msgBox.addButton("关闭并回到遥控模式", QMessageBox::ActionRole);
     QPushButton *btnAutoReturn = msgBox.addButton("一键自主返航", QMessageBox::ActionRole);
-    QPushButton *btnResend = msgBox.addButton("重新发送", QMessageBox::ActionRole);
     QPushButton *btnCancel = msgBox.addButton("取消", QMessageBox::RejectRole);
 
     msgBox.exec();
@@ -120,15 +119,12 @@ void CTrans::on_pushButton_StopTrans_clicked()//停止发送
         // TODO: 回到遥控模式的处理
         // 断开信号
         disconnect(this, &CTrans::requestData, this, &CTrans::handleDataRequest);
-
-
         // 停止并清理CSV工作线程
         if (m_csvWorker) {
             m_csvWorker->stop();
             delete m_csvWorker;
             m_csvWorker = nullptr;
         }
-
         // 重置所有状态
         m_currentIndex = 0;
         trans_flag = false;
@@ -148,7 +144,6 @@ void CTrans::on_pushButton_StopTrans_clicked()//停止发送
             QVector<float> firstRow = m_csvWorker->getRow(0);
             // 重置所有状态
             m_currentIndex = 0;
-
             trans_flag = false;
             pause_flag = false;
             // 复位UI
@@ -170,7 +165,40 @@ void CTrans::on_pushButton_StopTrans_clicked()//停止发送
                 ui2->lineEdit_p4->setText(QString::number(firstRow[3], 'f', 2));
                 ui2->lineEdit_p5->setText(QString::number(firstRow[4], 'f', 2));
                 ui2->lineEdit_p6->setText(QString::number(firstRow[5], 'f', 2));
-                // //QMessageBox::information(this, "返航", "已发送返航点。");
+
+                //QMessageBox::information(this, "返航", "已发送返航点。");
+                QMessageBox msgBox_AutoReturn(this);
+                msgBox_AutoReturn.setWindowTitle("一键自主返航");
+                msgBox_AutoReturn.setText("已发送返航点：");
+                // 添加两个自定义按钮
+                QPushButton *btnStoptoRemote = msgBox_AutoReturn.addButton("停止并回到遥控模式", QMessageBox::ActionRole);
+                QPushButton *btnReturn = msgBox_AutoReturn.addButton("返回发送界面", QMessageBox::ActionRole);
+                msgBox_AutoReturn.exec();
+                if (msgBox_AutoReturn.clickedButton() == btnStoptoRemote) {//停止并回到遥控模式
+                    // 断开信号
+                    disconnect(this, &CTrans::requestData, this, &CTrans::handleDataRequest);
+                    // 停止并清理CSV工作线程
+                    if (m_csvWorker) {
+                        m_csvWorker->stop();
+                        delete m_csvWorker;
+                        m_csvWorker = nullptr;
+                    }
+                    // 重置所有状态
+                    m_currentIndex = 0;
+                    trans_flag = false;
+                    pause_flag = false;
+                    // 复位UI
+                    ui2->progressBar->setValue(0);
+                    ui2->pushButton_BeginTrans->setDisabled(false);
+                    ui2->pushButton_PauseTrans->setText("暂停");
+                    // 关闭当前窗口
+                    this->close();
+                }else if(msgBox_AutoReturn.clickedButton() == btnReturn) {//返回发送界面
+                    ui2->pushButton_PauseTrans->setDisabled(false);
+                    ui2->pushButton_PauseTrans->setText("继续");
+                    pause_flag = true;
+                    ui2->pushButton_PauseTrans->setDisabled(true);//禁用暂停按钮
+                }
             } else {
                 QMessageBox::warning(this, "返航", "CSV数据格式错误！");
             }
@@ -178,9 +206,6 @@ void CTrans::on_pushButton_StopTrans_clicked()//停止发送
             QMessageBox::warning(this, "返航", "CSV数据不存在！");
         }
         // 返航后，传输仍可继续，窗口不关闭
-
-    } else if (msgBox.clickedButton() == btnResend) {
-        // TODO: 重新发送逻辑
 
     } else if (msgBox.clickedButton() == btnCancel) {
         // TODO: 取消，什么都不做
@@ -241,8 +266,4 @@ void CTrans::handleDataLoaded(int totalRows)//读取文件以后
     // 在UI中显示总行数
     //ui2->lineEdit_RecordCount->setText(QString::number(totalRows));
 }
-
-
-
-
 
