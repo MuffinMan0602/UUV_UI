@@ -1438,7 +1438,7 @@
       <rect>
        <x>0</x>
        <y>20</y>
-       <width>111</width>
+       <width>122</width>
        <height>131</height>
       </rect>
      </property>
@@ -2905,7 +2905,7 @@
        <x>360</x>
        <y>20</y>
        <width>151</width>
-       <height>131</height>
+       <height>152</height>
       </rect>
      </property>
      <layout class="QFormLayout" name="formLayout">
@@ -2918,7 +2918,7 @@
       <property name="verticalSpacing">
        <number>0</number>
       </property>
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="QLabel" name="label_voltage">
         <property name="minimumSize">
          <size>
@@ -2943,7 +2943,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="1" column="1">
        <widget class="QLineEdit" name="lineEdit_voltage">
         <property name="enabled">
          <bool>true</bool>
@@ -2977,7 +2977,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="label_current">
         <property name="minimumSize">
          <size>
@@ -3002,7 +3002,7 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QLineEdit" name="lineEdit_current">
         <property name="enabled">
          <bool>true</bool>
@@ -3036,7 +3036,7 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="label_temperature">
         <property name="minimumSize">
          <size>
@@ -3061,8 +3061,8 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_Pitch_2">
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="lineEdit_temperature">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -3095,7 +3095,7 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="4" column="0">
        <widget class="QLabel" name="label_jettison">
         <property name="minimumSize">
          <size>
@@ -3120,8 +3120,8 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QLineEdit" name="lineEdit_jettison">
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="lineEdit_DropSignal">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -3154,7 +3154,7 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="5" column="0">
        <widget class="QLabel" name="label_NAV">
         <property name="minimumSize">
          <size>
@@ -3179,8 +3179,8 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="QLineEdit" name="lineEdit_jettison_2">
+      <item row="5" column="1">
+       <widget class="QLineEdit" name="lineEdit_NAV">
         <property name="enabled">
          <bool>true</bool>
         </property>
@@ -3213,6 +3213,65 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_workmode_feedback">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>微软雅黑</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>工作模式</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="lineEdit__workmode_feedback">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>70</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>70</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Times New Roman</family>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignCenter</set>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
     <widget class="Line" name="line_8">
@@ -3220,7 +3279,7 @@
       <rect>
        <x>10</x>
        <y>170</y>
-       <width>341</width>
+       <width>501</width>
        <height>10</height>
       </rect>
      </property>
@@ -3238,31 +3297,6 @@
      </property>
      <property name="orientation">
       <enum>Qt::Orientation::Horizontal</enum>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="pushButton_3">
-     <property name="geometry">
-      <rect>
-       <x>360</x>
-       <y>150</y>
-       <width>150</width>
-       <height>30</height>
-      </rect>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>150</width>
-       <height>30</height>
-      </size>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>150</width>
-       <height>30</height>
-      </size>
-     </property>
-     <property name="text">
-      <string>绘制轨迹图</string>
      </property>
     </widget>
    </widget>
@@ -3312,13 +3346,13 @@
      <rect>
       <x>440</x>
       <y>190</y>
-      <width>341</width>
+      <width>311</width>
       <height>31</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <property name="spacing">
-      <number>5</number>
+      <number>2</number>
      </property>
      <property name="leftMargin">
       <number>2</number>
@@ -3347,12 +3381,12 @@
         </font>
        </property>
        <property name="text">
-        <string>控制量反馈</string>
+        <string>力反馈</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_tawtheta_2">
+      <widget class="QLineEdit" name="lineEdit_T1">
        <property name="minimumSize">
         <size>
          <width>35</width>
@@ -3371,7 +3405,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_tawy_2">
+      <widget class="QLineEdit" name="lineEdit_T2">
        <property name="minimumSize">
         <size>
          <width>35</width>
@@ -3390,7 +3424,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_tawphi_2">
+      <widget class="QLineEdit" name="lineEdit_T3">
        <property name="minimumSize">
         <size>
          <width>35</width>
@@ -3409,7 +3443,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_tawz_2">
+      <widget class="QLineEdit" name="lineEdit_T4">
        <property name="minimumSize">
         <size>
          <width>35</width>
@@ -3428,7 +3462,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_tawx_2">
+      <widget class="QLineEdit" name="lineEdit_T5">
        <property name="minimumSize">
         <size>
          <width>35</width>
@@ -3447,7 +3481,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QLineEdit" name="lineEdit_tawpsi_2">
+      <widget class="QLineEdit" name="lineEdit_T6">
        <property name="minimumSize">
         <size>
          <width>35</width>
@@ -3483,21 +3517,21 @@
    <widget class="QPushButton" name="pushButton_camera">
     <property name="geometry">
      <rect>
-      <x>790</x>
+      <x>820</x>
       <y>190</y>
-      <width>150</width>
+      <width>120</width>
       <height>30</height>
      </rect>
     </property>
     <property name="minimumSize">
      <size>
-      <width>150</width>
+      <width>120</width>
       <height>30</height>
      </size>
     </property>
     <property name="maximumSize">
      <size>
-      <width>150</width>
+      <width>120</width>
       <height>30</height>
      </size>
     </property>
@@ -3528,6 +3562,31 @@
     </property>
     <property name="orientation">
      <enum>Qt::Orientation::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_3">
+    <property name="geometry">
+     <rect>
+      <x>750</x>
+      <y>190</y>
+      <width>70</width>
+      <height>30</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>70</width>
+      <height>30</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>70</width>
+      <height>30</height>
+     </size>
+    </property>
+    <property name="text">
+     <string>绘制轨迹</string>
     </property>
    </widget>
   </widget>

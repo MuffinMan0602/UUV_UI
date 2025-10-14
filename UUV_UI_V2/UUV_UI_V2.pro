@@ -22,6 +22,7 @@ SOURCES += \
 HEADERS += \
     csvworker.h \
     ctrans.h \
+    protocol_receive.h \
     serial_Receive_worker.h \
     serial_Transmit_worker.h \
     uuv_log_recorder.h \

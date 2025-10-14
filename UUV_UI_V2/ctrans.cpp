@@ -7,7 +7,7 @@ CTrans::CTrans(QWidget *parent)
     , ui2(new Ui::CTrans)
 {
     ui2->setupUi(this);
-    setWindowTitle("连续发送模式");
+    setWindowTitle("自主发送模式");
     this->setWindowFlags(Qt::Window);
     ui2->pushButton_PauseTrans->setDisabled(true);//停止按钮按下后停用暂停按钮
 

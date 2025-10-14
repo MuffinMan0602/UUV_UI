@@ -51,10 +51,14 @@ UUV_UI::UUV_UI(QWidget *parent)
 
     // ------------------ 线程信号槽 ---------------------
     //连接子线程信号和槽
-    connect(receiveWorker, &SerialReceiveWorker::dataReceived, this, &UUV_UI::onSerialDataReceived);
-    connect(receiveWorker, &SerialReceiveWorker::errorOccurred, this, &UUV_UI::onSerialErrorOccurred);
+    connect(receiveWorker, &SerialReceiveWorker::frameReceived,
+            this, &UUV_UI::onUUVFrameReceived);
+
+    //connect(receiveWorker, &SerialReceiveWorker::dataReceived, this, &UUV_UI::onSerialDataReceived);
+    //connect(receiveWorker, &SerialReceiveWorker::errorOccurred, this, &UUV_UI::onSerialErrorOccurred);
+    //connect(receiveWorker, &SerialReceiveWorker::receiveViewUpdated, this, &UUV_UI::updateReceivePreview);
+
     connect(transmitWorker, &SerialTransmitWorker::transmitViewUpdated, this, &UUV_UI::updateTransmitPreview);//预览框
-    connect(receiveWorker, &SerialReceiveWorker::receiveViewUpdated, this, &UUV_UI::updateReceivePreview);
 
 
 
@@ -74,11 +78,11 @@ UUV_UI::UUV_UI(QWidget *parent)
 
 UUV_UI::~UUV_UI()
 {
-    transmitWorker->terminate();// 停止子线程
-    receiveWorker->stopSerialReceive(); // 停止线程
-    sharedSerial->close(); // 由主线程统一关闭
+    if (transmitWorker)transmitWorker->terminate();// 停止子线程
+    if (receiveWorker)receiveWorker->stopSerialReceive(); // 停止线程
+    if (sharedSerial)sharedSerial->close(); // 由主线程统一关闭
 
-    // 若仍在记录，可在此决定是否自动保存——当前策略：不保存直接销毁**********
+    // 若仍在记录，可在此决定是否自动保存——当前策略：不保存直接销毁
     delete ui;
 }
 
@@ -550,31 +554,84 @@ void UUV_UI::semiAutoControlValueComput()//计算半自主控制的期望深度�
 }
 
 
-void UUV_UI::onSerialDataReceived(float x, float y, float z, float roll, float pitch, float yaw)//显示机器人状态
-{
-    // 更新 UI
-    ui->lineEdit_X->setText(QString::number(x, 'f', 2));
-    ui->lineEdit_Y->setText(QString::number(y, 'f', 2));
-    ui->lineEdit_Z->setText(QString::number(z, 'f', 2));
-    ui->lineEdit_Roll->setText(QString::number(roll, 'f', 2));
-    ui->lineEdit_Pitch->setText(QString::number(pitch, 'f', 2));
-    ui->lineEdit_Yaw->setText(QString::number(yaw, 'f', 2));
+// void UUV_UI::onSerialDataReceived(float x, float y, float z, float roll, float pitch, float yaw)//显示机器人状态
+// {
+//     // 更新 UI
+//     ui->lineEdit_X->setText(QString::number(x, 'f', 2));
+//     ui->lineEdit_Y->setText(QString::number(y, 'f', 2));
+//     ui->lineEdit_Z->setText(QString::number(z, 'f', 2));
+//     ui->lineEdit_Roll->setText(QString::number(roll, 'f', 2));
+//     ui->lineEdit_Pitch->setText(QString::number(pitch, 'f', 2));
+//     ui->lineEdit_Yaw->setText(QString::number(yaw, 'f', 2));
 
-    //==== 日志记录：记录接收行 ====
-    if (m_recorder.isRecording()) {
-        UUVLogRecorder::ReceiveFields rf;
-        rf.eta[0]=x; rf.eta[1]=y; rf.eta[2]=z;
-        rf.eta[3]=roll; rf.eta[4]=pitch; rf.eta[5]=yaw;
-        m_recorder.appendReceive(rf);
-        if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
-    }
-}
+//     //==== 日志记录：记录接收行 ====
+//     if (m_recorder.isRecording()) {
+//         UUVLogRecorder::ReceiveFields rf;
+//         rf.eta[0]=x; rf.eta[1]=y; rf.eta[2]=z;
+//         rf.eta[3]=roll; rf.eta[4]=pitch; rf.eta[5]=yaw;
+//         m_recorder.appendReceive(rf);
+//         if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
+//     }
+// }
 
 // 处理串口错误
-void UUV_UI::onSerialErrorOccurred(const QString &errorMessage)
+// void UUV_UI::onSerialErrorOccurred(const QString &errorMessage)
+// {
+//     ui->lineEdit_Warning->setText(errorMessage);
+// }
+
+
+void UUV_UI::onUUVFrameReceived(const UUVRxFrame &f)
 {
-    ui->lineEdit_Warning->setText(errorMessage);
+    auto setFloat = [&](const char* name, float v, int prec = 2) {
+        if (auto w = this->findChild<QLineEdit*>(name)) {
+            w->setText(QString::number(v, 'f', prec));
+        }
+    };
+    auto setInt = [&](const char* name, int v) {
+        if (auto w = this->findChild<QLineEdit*>(name)) {
+            w->setText(QString::number(v));
+        }
+    };
+
+    // 模式
+    setInt("lineEdit_workmode_feedback", f.mode);
+
+    // 安全状态与来源
+    setInt("lineEdit_voltage",    f.voltage);
+    setInt("lineEdit_current",    f.current);
+    setInt("lineEdit_temperature",  f.cabinTemp);
+    setInt("lineEdit_DropSignal", f.dropSignal);
+    setInt("lineEdit_NAV",  f.posSource);
+
+    // 位姿
+    setFloat("lineEdit_X",     f.x);
+    setFloat("lineEdit_Y",     f.y);
+    setFloat("lineEdit_Z",     f.z);
+    setFloat("lineEdit_Roll",  f.phi);
+    setFloat("lineEdit_Pitch", f.theta);
+    setFloat("lineEdit_Yaw",   f.psi);
+
+    // 速度
+    setFloat("lineEdit_velocity_u", f.u);
+    setFloat("lineEdit_velocity_v", f.v);
+    setFloat("lineEdit_velocity_w", f.w);
+    setFloat("lineEdit_velocity_p", f.p);
+    setFloat("lineEdit_velocity_q", f.q);
+    setFloat("lineEdit_velocity_r", f.r);
+
+    // 推进器推力
+    setFloat("lineEdit_T1", f.T[0]);
+    setFloat("lineEdit_T2", f.T[1]);
+    setFloat("lineEdit_T3", f.T[2]);
+    setFloat("lineEdit_T4", f.T[3]);
+    setFloat("lineEdit_T5", f.T[4]);
+    setFloat("lineEdit_T6", f.T[5]);
+
+    // 若需要记录到日志：可在此处调用你的记录器追加一条记录（建议扩展记录结构体，使其包含新字段）
 }
+
+
 
 //预览框
 void UUV_UI::updateTransmitPreview(const QString &transmitView)
@@ -809,3 +866,5 @@ void UUV_UI::logTransmitFrame()
         ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
     }
 }
+
+

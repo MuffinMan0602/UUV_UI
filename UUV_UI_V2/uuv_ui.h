@@ -13,7 +13,6 @@
 #include <windows.h>  // 包含 ZeroMemory 宏的定义
 #include <XInput.h>
 #include <QThread>
-//#include <QPoint>
 #include <QScreen>
 
 #include "serial_Receive_worker.h"
@@ -24,6 +23,11 @@
 
 #include "uuv_log_recorder.h"   // 引入自定义独立日志记录类
 
+#include "protocol_receive.h"
+// 协议头（仅用于“接收”方向），包含帧偏移、常量与 UUVRxFrame 结构体。
+// 该文件中声明了 Q_DECLARE_METATYPE(UUVRxFrame)，
+// 且在 SerialReceiveWorker 构造函数中进行了 qRegisterMetaType 注册，
+// 使得 frameReceived(UUVRxFrame) 信号可以安全跨线程传递。
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -31,7 +35,9 @@ class UUV_UI;
 }
 QT_END_NAMESPACE
 
-
+class QSerialPort;
+class SerialTransmitWorker;
+class SerialReceiveWorker;
 
 class UUV_UI : public QMainWindow
 {
@@ -63,18 +69,22 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private:
-    Ui::UUV_UI *ui;
+    //Ui::UUV_UI *ui;
+    Ui::UUV_UI *ui = nullptr;
 
     int m_controllerId = 0; // 默认连接第一个手柄
 
     QTimer *TransmitTimer = new QTimer(this);//串口发送定时器
     QTimer *Gamepad_timer = new QTimer(this);//手柄刷新率
 
-    QSerialPort *sharedSerial; // 共享串口对象
-    SerialTransmitWorker *transmitWorker; // 发送线程
-    SerialReceiveWorker *receiveWorker; // 接收解算线程
+    QSerialPort *sharedSerial = nullptr;              // 共享串口对象
+    SerialTransmitWorker *transmitWorker = nullptr;   // 发送线程
+    SerialReceiveWorker  *receiveWorker  = nullptr;   // 接收解算线程
+    // QSerialPort *sharedSerial; // 共享串口对象
+    // SerialTransmitWorker *transmitWorker; // 发送线程
+    // SerialReceiveWorker *receiveWorker; // 接收解算线程
 
-    CTrans *ctransWidget = nullptr;//定义全局的连续发送类，指针指向空
+    CTrans *ctransWidget = nullptr;//连续发送子窗口,定义全局的连续发送类，指针指向空
     bool csvDataflag = false; // 是否已拿到CSV的有效数据
     int m_csvCurrentIndex = 0; // 当前CSV数据索引
 
@@ -88,6 +98,7 @@ private:
     void ManualControlValue();//计算控制量
     void semiAutoControlValueComput();//半自主模式控制量计算
     void ShowMovement();//展示当前动作
+
     void updateTransmitPreview(const QString &transmitView); // 更新发送预览框
     void updateReceivePreview(const QString &receiveView);   // 更新接收预览框
 
@@ -123,8 +134,11 @@ private slots:
     void requestTransmit();//
 
     // 串口子线程信号槽
-    void onSerialErrorOccurred(const QString &errorMessage); // 新增，处理串口错误
-    void onSerialDataReceived(float x, float y, float z, float roll, float pitch, float yaw); // 更新UI
+    //void onSerialErrorOccurred(const QString &errorMessage); // 新增，处理串口错误
+    //void onSerialDataReceived(float x, float y, float z, float roll, float pitch, float yaw); // 更新UI
+
+    // 处理完整帧并更新 UI
+    void onUUVFrameReceived(const UUVRxFrame &f);
 
     void updateTransValues(); // 更新发送参数给线程
 
