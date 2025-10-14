@@ -14,6 +14,7 @@
 #include <XInput.h>
 #include <QThread>
 #include <QScreen>
+#include <QScrollBar>
 
 #include "serial_Receive_worker.h"
 #include "serial_Transmit_worker.h"

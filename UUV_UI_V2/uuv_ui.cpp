@@ -56,7 +56,7 @@ UUV_UI::UUV_UI(QWidget *parent)
 
     //connect(receiveWorker, &SerialReceiveWorker::dataReceived, this, &UUV_UI::onSerialDataReceived);
     //connect(receiveWorker, &SerialReceiveWorker::errorOccurred, this, &UUV_UI::onSerialErrorOccurred);
-    //connect(receiveWorker, &SerialReceiveWorker::receiveViewUpdated, this, &UUV_UI::updateReceivePreview);
+    connect(receiveWorker, &SerialReceiveWorker::receiveViewUpdated, this, &UUV_UI::updateReceivePreview);
 
     connect(transmitWorker, &SerialTransmitWorker::transmitViewUpdated, this, &UUV_UI::updateTransmitPreview);//预览框
 
@@ -448,6 +448,7 @@ void UUV_UI::updateTransValues()//向子线程发送数据，更新控制参数
     }else{//全自主模式
         transmitWorker->updateTransValues2(WorkMode,pos[0],pos[1],pos[2],pos[3],pos[4],pos[5]);
     }
+
 }
 
 void UUV_UI::ShowMovement()//显示当前动作
@@ -554,81 +555,150 @@ void UUV_UI::semiAutoControlValueComput()//计算半自主控制的期望深度�
 }
 
 
-// void UUV_UI::onSerialDataReceived(float x, float y, float z, float roll, float pitch, float yaw)//显示机器人状态
+// void UUV_UI::onUUVFrameReceived(const UUVRxFrame &f)
 // {
-//     // 更新 UI
-//     ui->lineEdit_X->setText(QString::number(x, 'f', 2));
-//     ui->lineEdit_Y->setText(QString::number(y, 'f', 2));
-//     ui->lineEdit_Z->setText(QString::number(z, 'f', 2));
-//     ui->lineEdit_Roll->setText(QString::number(roll, 'f', 2));
-//     ui->lineEdit_Pitch->setText(QString::number(pitch, 'f', 2));
-//     ui->lineEdit_Yaw->setText(QString::number(yaw, 'f', 2));
+//     auto setFloat = [&](const char* name, float v, int prec = 2) {
+//         if (auto w = this->findChild<QLineEdit*>(name)) {
+//             w->setText(QString::number(v, 'f', prec));
+//         }
+//     };
+//     auto setInt = [&](const char* name, int v) {
+//         if (auto w = this->findChild<QLineEdit*>(name)) {
+//             w->setText(QString::number(v));
+//         }
+//     };
 
-//     //==== 日志记录：记录接收行 ====
-//     if (m_recorder.isRecording()) {
-//         UUVLogRecorder::ReceiveFields rf;
-//         rf.eta[0]=x; rf.eta[1]=y; rf.eta[2]=z;
-//         rf.eta[3]=roll; rf.eta[4]=pitch; rf.eta[5]=yaw;
-//         m_recorder.appendReceive(rf);
-//         if (ui->lineEdit_RecordCount_line) ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
-//     }
+//     // 模式
+//     setInt("lineEdit_workmode_feedback", f.mode);
+
+//     // 安全状态与来源
+//     setInt("lineEdit_voltage",    f.voltage);
+//     setInt("lineEdit_current",    f.current);
+//     setInt("lineEdit_temperature",  f.cabinTemp);
+//     setInt("lineEdit_DropSignal", f.dropSignal);
+//     setInt("lineEdit_NAV",  f.posSource);
+
+//     // 位姿
+//     setFloat("lineEdit_X",     f.x);
+//     setFloat("lineEdit_Y",     f.y);
+//     setFloat("lineEdit_Z",     f.z);
+//     setFloat("lineEdit_Roll",  f.phi);
+//     setFloat("lineEdit_Pitch", f.theta);
+//     setFloat("lineEdit_Yaw",   f.psi);
+
+//     // 速度
+//     setFloat("lineEdit_velocity_u", f.u);
+//     setFloat("lineEdit_velocity_v", f.v);
+//     setFloat("lineEdit_velocity_w", f.w);
+//     setFloat("lineEdit_velocity_p", f.p);
+//     setFloat("lineEdit_velocity_q", f.q);
+//     setFloat("lineEdit_velocity_r", f.r);
+
+//     // 推进器推力
+//     setFloat("lineEdit_T1", f.T[0]);
+//     setFloat("lineEdit_T2", f.T[1]);
+//     setFloat("lineEdit_T3", f.T[2]);
+//     setFloat("lineEdit_T4", f.T[3]);
+//     setFloat("lineEdit_T5", f.T[4]);
+//     setFloat("lineEdit_T6", f.T[5]);
+
+//     // 若需要记录到日志：可在此处调用你的记录器追加一条记录（建议扩展记录结构体，使其包含新字段）
 // }
-
-// 处理串口错误
-// void UUV_UI::onSerialErrorOccurred(const QString &errorMessage)
-// {
-//     ui->lineEdit_Warning->setText(errorMessage);
-// }
-
 
 void UUV_UI::onUUVFrameReceived(const UUVRxFrame &f)
 {
-    auto setFloat = [&](const char* name, float v, int prec = 2) {
-        if (auto w = this->findChild<QLineEdit*>(name)) {
-            w->setText(QString::number(v, 'f', prec));
-        }
+    // 小工具：安全设置 QLineEdit 文本
+    auto setText = [&](QLineEdit* w, const QString& s) {
+        if (w) w->setText(s);
     };
-    auto setInt = [&](const char* name, int v) {
-        if (auto w = this->findChild<QLineEdit*>(name)) {
-            w->setText(QString::number(v));
-        }
+    // 小工具：告警背景（红）与恢复默认（空字符串等于使用样式表默认）
+    auto setWarnBg = [&](QLineEdit* w, bool warn) {
+        if (!w) return;
+        if (warn) w->setStyleSheet("QLineEdit { background-color: #FFCCCC; }");
+        else      w->setStyleSheet("");
     };
 
-    // 模式
-    setInt("lineEdit_workmode_feedback", f.mode);
+    // 1) 模式（如有对应控件）
+    if (auto w = ui->lineEdit_workmode_feedback){
+        setText(w, QString::number(f.mode));
+    }
 
-    // 安全状态与来源
-    setInt("lineEdit_voltage",    f.voltage);
-    setInt("lineEdit_current",    f.current);
-    setInt("lineEdit_temperature",  f.cabinTemp);
-    setInt("lineEdit_DropSignal", f.dropSignal);
-    setInt("lineEdit_NAV",  f.posSource);
+    // 2) 电压/电流/温度（还原原始数据显示 + 阈值变色）
+    if (auto w = ui->lineEdit_voltage) {
+        const double v = (f.voltage * 0.01)*(25.2-22.2)+22.2; // 放大显示
+        setText(w, QString::number(v, 'f', 2));
+        setWarnBg(w, v < 22.2);
+    }
+    if (auto w = ui->lineEdit_current) {
+        const double a = (f.current * 0.01)*30; // 放大显示
+        setText(w, QString::number(a, 'f', 2));
+        setWarnBg(w, a > 30.0);
+    }
+    if (auto w = ui->lineEdit_temperature) {
+        const double t = (f.cabinTemp *0.01)*(40-10)+10; // 放大显示
+        setText(w, QString::number(t, 'f', 1));
+        setWarnBg(w, t > 40.0);
+    }
 
-    // 位姿
-    setFloat("lineEdit_X",     f.x);
-    setFloat("lineEdit_Y",     f.y);
-    setFloat("lineEdit_Z",     f.z);
-    setFloat("lineEdit_Roll",  f.phi);
-    setFloat("lineEdit_Pitch", f.theta);
-    setFloat("lineEdit_Yaw",   f.psi);
+    // 3) 抛载状态：1 -> 已触发（红），否则 未触发（恢复）
+    if (auto w = ui->lineEdit_DropSignal) {
+        const bool triggered = (f.dropSignal == 1);
+        setText(w, triggered ? QStringLiteral("已触发") : QStringLiteral("未触发"));
+        setWarnBg(w, triggered);
+    }
 
-    // 速度
-    setFloat("lineEdit_velocity_u", f.u);
-    setFloat("lineEdit_velocity_v", f.v);
-    setFloat("lineEdit_velocity_w", f.w);
-    setFloat("lineEdit_velocity_p", f.p);
-    setFloat("lineEdit_velocity_q", f.q);
-    setFloat("lineEdit_velocity_r", f.r);
+    // 4) 导航状态（位置信息来源）：1 基站，2 推位
+    if (auto w = ui->lineEdit_NAV) {
+        QString nav;
+        if (f.posSource == 1)      nav = QStringLiteral("基站");
+        else if (f.posSource == 2) nav = QStringLiteral("推位");
+        else                       nav = QString::number(f.posSource); // 或者 "未知"
+        setText(w, nav);
+    }
 
-    // 推进器推力
-    setFloat("lineEdit_T1", f.T[0]);
-    setFloat("lineEdit_T2", f.T[1]);
-    setFloat("lineEdit_T3", f.T[2]);
-    setFloat("lineEdit_T4", f.T[3]);
-    setFloat("lineEdit_T5", f.T[4]);
-    setFloat("lineEdit_T6", f.T[5]);
+    // 5) 位姿（若你的 UI 成员名是 ui->lineEdit_X/Y/Z/Roll/Pitch/Yaw）
+    if (auto w = ui->lineEdit_X)     setText(w, QString::number(f.x, 'f', 2));
+    if (auto w = ui->lineEdit_Y)     setText(w, QString::number(f.y, 'f', 2));
+    if (auto w = ui->lineEdit_Z)     setText(w, QString::number(f.z, 'f', 2));
+    if (auto w = ui->lineEdit_Roll)  setText(w, QString::number(f.phi, 'f', 2));
+    if (auto w = ui->lineEdit_Pitch) setText(w, QString::number(f.theta, 'f', 2));
+    if (auto w = ui->lineEdit_Yaw)   setText(w, QString::number(f.psi, 'f', 2));
 
-    // 若需要记录到日志：可在此处调用你的记录器追加一条记录（建议扩展记录结构体，使其包含新字段）
+    // 6) 速度
+    if (auto w = ui->lineEdit_velocity_u) setText(w, QString::number(f.u, 'f', 2));
+    if (auto w = ui->lineEdit_velocity_v) setText(w, QString::number(f.v, 'f', 2));
+    if (auto w = ui->lineEdit_velocity_w) setText(w, QString::number(f.w, 'f', 2));
+    if (auto w = ui->lineEdit_velocity_p) setText(w, QString::number(f.p, 'f', 2));
+    if (auto w = ui->lineEdit_velocity_q) setText(w, QString::number(f.q, 'f', 2));
+    if (auto w = ui->lineEdit_velocity_r) setText(w, QString::number(f.r, 'f', 2));
+
+    // 7) 推进器推力
+    if (auto w = ui->lineEdit_T1) setText(w, QString::number(f.T[0], 'f', 2));
+    if (auto w = ui->lineEdit_T2) setText(w, QString::number(f.T[1], 'f', 2));
+    if (auto w = ui->lineEdit_T3) setText(w, QString::number(f.T[2], 'f', 2));
+    if (auto w = ui->lineEdit_T4) setText(w, QString::number(f.T[3], 'f', 2));
+    if (auto w = ui->lineEdit_T5) setText(w, QString::number(f.T[4], 'f', 2));
+    if (auto w = ui->lineEdit_T6) setText(w, QString::number(f.T[5], 'f', 2));
+
+    // 8) 日志记录 RX
+    if (m_recorder.isRecording()) {
+        UUVLogRecorder::ReceiveFields rf;
+        rf.mode      = f.mode;
+        rf.voltage   = f.voltage;    // 记录原始值，不乘 1.5（便于事后复算/阈值重设）
+        rf.current   = f.current;
+        rf.cabinTemp = f.cabinTemp;
+        rf.dropSignal= f.dropSignal;
+        rf.posSource = f.posSource;
+        rf.eta[0]=f.x;  rf.eta[1]=f.y;  rf.eta[2]=f.z;
+        rf.eta[3]=f.phi;rf.eta[4]=f.theta;rf.eta[5]=f.psi;
+        rf.vel[0]=f.u;  rf.vel[1]=f.v;  rf.vel[2]=f.w;
+        rf.vel[3]=f.p;  rf.vel[4]=f.q;  rf.vel[5]=f.r;
+        for (int i=0;i<6;++i) rf.thruster[i]=f.T[i];
+
+        m_recorder.appendReceive(rf);
+        if (ui->lineEdit_RecordCount_line)
+            ui->lineEdit_RecordCount_line->setText(QString::number(m_recorder.recordCount()));
+    }
 }
 
 
@@ -645,8 +715,14 @@ void UUV_UI::updateTransmitPreview(const QString &transmitView)
 
 void UUV_UI::updateReceivePreview(const QString &receiveView)
 {
-    ui->textBrowser_RPreview->append(receiveView);             // 将新内容追加到接收预览框
-    ui->textBrowser_RPreview->moveCursor(QTextCursor::End);    // 光标移动到文本框末尾
+    // ui->textBrowser_RPreview->append(receiveView);             // 将新内容追加到接收预览框
+    // ui->textBrowser_RPreview->moveCursor(QTextCursor::End);    // 光标移动到文本框末尾
+    // if (!ui || !ui->textBrowser_RPreview) return;
+    ui->textBrowser_RPreview->append(receiveView);
+    // 自动滚动到底
+    if (auto sb = ui->textBrowser_RPreview->verticalScrollBar()) {
+        sb->setValue(sb->maximum());
+    }
 }
 
 

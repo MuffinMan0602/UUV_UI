@@ -4,12 +4,16 @@
 #include <QLocale>
 #include <QFileInfo>
 
+UUVLogRecorder::UUVLogRecorder(QObject* parent)
+    : QObject(parent)
+{}
+
 /* 开始记录：清空旧数据，记录当前 UTC 起始时间，置 recording=true */
 void UUVLogRecorder::start()
 {
-    m_rows.clear();
-    m_startUtc = QDateTime::currentDateTimeUtc();
+    m_rows.clear();    
     m_recording = true;
+    m_startUtc = QDateTime::currentDateTimeUtc();
 }
 
 /* 停止并清空所有记录 */
@@ -17,7 +21,7 @@ void UUVLogRecorder::stopAndClear()
 {
     m_recording = false;
     m_rows.clear();
-    m_startUtc = QDateTime();
+    //m_startUtc = QDateTime();
 }
 
 /* 获取已运行毫秒数（未 start 或已 stop 返回 0） */
@@ -51,12 +55,27 @@ QString UUVLogRecorder::nowUtcString()
 QStringList UUVLogRecorder::buildHeader() const
 {
     return {
-        "TimestampUTC","Direction",
-        "WorkMode",
-        "taw_x","taw_y","taw_z","taw_phi","taw_theta","taw_psi",
-        "Depth_d","Yaw_d",
-        "eta_d1","eta_d2","eta_d3","eta_d4","eta_d5","eta_d6",
-        "x","y","z","roll","pitch","yaw"
+            "dir",
+            "timestamp_utc",
+            "elapsed_ms",
+
+            // RX 新协议字段
+            "rx_mode",
+            "rx_voltage",
+            "rx_current",
+            "rx_temperature",
+            "rx_drop",
+            "rx_posSource",
+            "x","y","z","phi","theta","psi",
+            "u","v","w","p","q","r",
+            "T1","T2","T3","T4","T5","T6",
+
+            // TX 原协议字段（mode 1..4）
+            "tx_taw_x","tx_taw_y","tx_taw_z","tx_taw_phi","tx_taw_theta","tx_taw_psi",
+            "tx_Depth_d","tx_Yaw_d",
+
+            // TX 原协议字段（mode 5）
+            "tx_pos1","tx_pos2","tx_pos3","tx_pos4","tx_pos5","tx_pos6"
     };
 }
 
@@ -64,60 +83,68 @@ QStringList UUVLogRecorder::buildHeader() const
 QStringList UUVLogRecorder::buildTransmitRow(const TransmitFields& tf) const
 {
     QStringList row;
-    row.reserve(23);
-    row << nowUtcString() << "Transmit"
-        << QString::number(tf.workMode)
-        << QString::number(tf.taw_x)
-        << QString::number(tf.taw_y)
-        << QString::number(tf.taw_z)
-        << QString::number(tf.taw_phi)
-        << QString::number(tf.taw_theta)
-        << QString::number(tf.taw_psi)
-        << QString::number(tf.depth_d, 'f', 3)
-        << QString::number(tf.yaw_d, 'f', 3);
+    row.reserve(3 + 5 + 6 + 6 + 6 + 8 + 6);
 
-        // 接收 x,y,z,roll,pitch,yaw 六列空
-        //<< QString::number(tf.pos[0], 'f', 3)
-        //<< QString::number(tf.pos[1], 'f', 3)
-        //<< QString::number(tf.pos[2], 'f', 3)
-        //<< QString::number(tf.pos[3], 'f', 3)
-        //<< QString::number(tf.pos[4], 'f', 3)
-        //<< QString::number(tf.pos[5], 'f', 3)
+    row << "TX";
+    row << nowUtcString();
+    row << QString::number(elapsedMs());
 
-        // 根据 posValid 决定是否写 pos 数值：
-        if (tf.posValid) {
-            for (int i=0;i<6;++i){
-                row << QString::number(tf.pos[i], 'f', 3);
-            }
-        } else {
-            // 未发送 pos（非全自主模式），用空值表示“无”
-            for (int i=0;i<6;++i)
-                row << ""; // 你也可以改成 "NA"
-        }
+    // —— RX 字段全部占位（5 状态 + 6 位姿 + 6 速度 + 6 推进器 = 23 列）
+    for (int i=0;i<23;++i) row << QString();
 
-    // 接收位姿占位空
-    row << "" << "" << "" << "" << "" << "";
+    // —— TX（mode 1..4）：taw6 + Depth_d + Yaw_d
+    row << QString::number(tf.taw_x);
+    row << QString::number(tf.taw_y);
+    row << QString::number(tf.taw_z);
+    row << QString::number(tf.taw_phi);
+    row << QString::number(tf.taw_theta);
+    row << QString::number(tf.taw_psi);
+    row << QString::number(tf.depth_d, 'f', 6);
+    row << QString::number(tf.yaw_d,   'f', 6);
+
+    // —— TX（mode 5）：pos1..6；如果不是 mode5/posValid=false，则留空
+    if (tf.posValid && tf.workMode == 5) {
+        for (int i=0;i<6;++i) row << QString::number(tf.pos[i], 'f', 6);
+    } else {
+        for (int i=0;i<6;++i) row << QString();
+    }
+
     return row;
 }
 
 /* 构建接收行：发送相关列留空 */
 QStringList UUVLogRecorder::buildReceiveRow(const ReceiveFields& rf) const
 {
+    // 公共前缀
     QStringList row;
-    row.reserve(23);
-    row << nowUtcString() << "Receive"
-        // 发送相关全部空（11 列：WorkMode + 6 taw + Depth_d + Yaw_d + pos1..6 共 1+6+2+6=15 列，注意这里我们对齐顺序）
-        << "" // WorkMode
-        << "" << "" << "" << "" << "" << "" // 6 个 taw
-        << "" << ""                         // Depth_d, Yaw_d
-        << "" << "" << "" << "" << "" << "" // pos1..6
-        // 接收 6 列
-        << QString::number(rf.eta[0], 'f', 3)
-        << QString::number(rf.eta[1], 'f', 3)
-        << QString::number(rf.eta[2], 'f', 3)
-        << QString::number(rf.eta[3], 'f', 3)
-        << QString::number(rf.eta[4], 'f', 3)
-        << QString::number(rf.eta[5], 'f', 3);
+    row.reserve(3 + 5 + 6 + 6 + 6 + 8 + 6); // 预留容量，减少 realloc
+    row << "RX";
+    row << nowUtcString();
+    row << QString::number(elapsedMs());
+
+    // —— RX 新协议字段
+    row << QString::number(rf.mode);
+    row << QString::number(rf.voltage);
+    row << QString::number(rf.current);
+    row << QString::number(rf.cabinTemp);
+    row << QString::number(rf.dropSignal);
+    row << QString::number(rf.posSource);
+
+    // 位姿 6
+    for (int i=0;i<6;++i) row << QString::number(rf.eta[i], 'f', 6);
+
+    // 速度 6
+    for (int i=0;i<6;++i) row << QString::number(rf.vel[i], 'f', 6);
+
+    // 推进器 6
+    for (int i=0;i<6;++i) row << QString::number(rf.thruster[i], 'f', 6);
+
+    // —— TX 字段占位：taw(6)+Depth_d+Yaw_d 共8列
+    for (int i=0;i<8;++i) row << QString();
+
+    // —— TX 全自主 pos1..6 占位
+    for (int i=0;i<6;++i) row << QString();
+
     return row;
 }
 
@@ -208,4 +235,5 @@ bool UUVLogRecorder::saveTxt(const QString& path, QString* errMsg) const
         return false;
     }
     return true;
+
 }

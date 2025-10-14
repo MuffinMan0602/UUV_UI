@@ -1,9 +1,8 @@
 #ifndef UUV_LOG_RECORDER_H
 #define UUV_LOG_RECORDER_H
 
-#endif // UUV_LOG_RECORDER_H
-
 #pragma once
+#include <QObject>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -22,28 +21,36 @@
  * 设计说明：
  *  - 内部用 QVector<QStringList> 保存每一行（已经是“列”分割状态，方便直接 join(',') 输出 CSV）
  *  - 发送与接收行采用相同列布局，缺失字段留空，列定义见 buildHeader()
- *  - 后续若要支持线程：保持相同 API，将内部存储改成队列 + worker 即可
  */
-
-class UUVLogRecorder
+class UUVLogRecorder: public QObject
 {
+    Q_OBJECT
 public:
+    explicit UUVLogRecorder(QObject* parent=nullptr);
+
     // 发送行字段（Tx）
     struct TransmitFields {
         int workMode = 0;
         int taw_x=0, taw_y=0, taw_z=0, taw_phi=0, taw_theta=0, taw_psi=0; // 六自由度整型控制量
         float depth_d = 0.f;  // 半自主期望深度
         float yaw_d   = 0.f;  // 半自主期望艏向
-        float pos[6]  = {0,0,0,0,0,0}; // 自主模式下 pos1..6
-        bool  posValid = false; // 新增：true 表示实际发送了 pos 数组 (WorkMode==0x05)
+        float pos[6]  = {0,0,0,0,0,0}; // 自主模式 pos1..6（mode 5）
+        bool  posValid = false;        // true 表示实际发送了 pos (WorkMode==5)
     };
 
-    // 接收行字段（Rx）
+    // 接收行字段（Rx）── 适配新接收协议
     struct ReceiveFields {
-        float eta[6] = {0,0,0,0,0,0}; // x,y,z,roll,pitch,yaw
-    };
+        int mode = 0;        // 0x01~0x05
+        int voltage = 0;     // 原始 int8 值
+        int current = 0;     // 原始 int8 值
+        int cabinTemp = 0;   // 原始 int8 值
+        int dropSignal = 0;  // 1=已触发
+        int posSource = 0;   // 1=基站/2=推位
 
-    UUVLogRecorder() = default;
+        float eta[6] = {0,0,0,0,0,0};      // x,y,z,phi,theta,psi
+        float vel[6] = {0,0,0,0,0,0};      // u,v,w,p,q,r
+        float thruster[6] = {0,0,0,0,0,0}; // T1..T6
+    };
 
     // 开始新的记录（重置数据 + 起始时间）
     void start();
@@ -67,10 +74,7 @@ public:
     // 按 "hh:mm:ss" 返回记录时长
     QString formattedDuration() const;
 
-    // 保存至指定文件：
-    //  - 如果后缀 .txt 则保存为文本格式（易读）
-    //  - 否则保存为 CSV（若无后缀或非 txt/csv，则自动补 .csv）
-    //  - errMsg（可选）返回错误原因
+    // 保存至指定文件（后缀 .txt 则保存为 TXT；否则为 CSV）
     bool saveToFile(const QString& path, QString* errMsg = nullptr) const;
 
 private:
@@ -78,10 +82,10 @@ private:
     QDateTime m_startUtc;              // UTC 起始时间（用于计算 elapsedMs）
     QVector<QStringList> m_rows;       // 每条日志一行（不含表头）
 
-    // 构建 CSV 表头
+    // 构建 CSV 表头（适配“接收新协议 + 发送原协议”的总列集合）
     QStringList buildHeader() const;
 
-    // 构建发送/接收行
+    // 构建发送/接收行（与表头列对齐；缺失列留空）
     QStringList buildTransmitRow(const TransmitFields& tf) const;
     QStringList buildReceiveRow(const ReceiveFields& rf) const;
 
@@ -92,3 +96,5 @@ private:
     // 当前 UTC 时间字符串（精确到毫秒）
     static QString nowUtcString();
 };
+
+#endif // UUV_LOG_RECORDER_H
